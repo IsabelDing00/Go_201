@@ -1,0 +1,82 @@
+1. Pass by value
+    Think about the code below:
+        func (p person) updateName(newFirstName string) {
+            p.firstName = newFirstName
+        }
+
+        // Todo: update the fname, and the old fname is Jim
+        jim.updateName("Jimmy")
+
+        jim.print() // use the print() function, but I will still get "Jim" as my fname, because this is pass by value
+
+    Go is a pass by value language, whenever pass a value into a function, go copies that value, so when we update the value it will never change the primary one.
+    Check the code below:
+        	// Todo: update the fname, use pass by reference
+                jimPointer := &jim
+                jimPointer.updateName("Jimmy") 
+                jim.print() // use the print() function
+            
+
+            func (pointerToPerson *person) updateName(newFirstName string) {
+                (*pointerToPerson).firstName = newFirstName
+            }
+
+            // Structs with receiver functions
+            func (p person) print() {
+                fmt.Printf("%+v", p)
+            }
+    
+    &variable -> turn the value to address
+    *pointer  -> turn the address to value
+    Notice: 1. func (pointerToPerson *person) updateName(newFirstName string) -> the *person means a type of pointer that points at a person
+            
+
+2. Pointer shortcut
+    jim.updateName() -> Go will gloss it
+            eg.
+            jim.updateName("Jimmy") 
+            jim.print() // use the print() function
+        
+
+            func (pointerToPerson *person) updateName(newFirstName string) {
+                (*pointerToPerson).firstName = newFirstName
+            }
+
+            // Structs with receiver functions
+            func (p person) print() {
+                fmt.Printf("%+v", p)
+            }
+
+3.  Value type will need to use pointers to change these things in a function, but reference type will not.
+    Reference type will have a location stores its data structure in the ram, and a location to store the data 
+    For example, slice will have a location has its structure: length, ptr to head, capcity
+                and ptr point to the data it contain, which will be another location.
+                When we call this reference type, it will copy the structure part, and the copied structure part has 
+                ptr to head and point to the same location of the data the original contains.
+    Value types: int, float, string, bool, Structs
+    Reference typs: slices, maps, channels, pointers, functions
+
+
+4. Map 
+    -- Simple example of map
+        eg. colors := map[string]string {}
+        The first string means the keys in the map will be string type
+        the second string means the value in the map will be string type
+
+    -- Two ways to initiate a map
+        colors := make(map[string]string)
+        var colors map[string]string
+
+    -- iterating over map in Go
+        func printMap(arg map[string]string) {   -> arg: argument name
+            for key, value := range arg {
+                ...
+            }
+        }
+
+5. Map vs. Structs
+                Map                                                    Structs
+    All keys and values must be the same type             Values can be different type
+    Keys are indexed, we can iterate over them            Keys don't support indexing 
+    Reference type                                        Value Type
+                                                          use to represent a "thing" with a lot of different propertis
