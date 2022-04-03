@@ -80,3 +80,137 @@
     Keys are indexed, we can iterate over them            Keys don't support indexing 
     Reference type                                        Value Type
                                                           use to represent a "thing" with a lot of different propertis
+
+6. make([]byte, 99999)
+   make(type of a slice, the number of elements that we want to slice to be initialized with)
+
+
+Questions to think about:
+    1. Every value has a type
+    2. Every function will need to specify the type of the return value
+    Question: What if I have need to print an image, a photo, a text, a http request body
+              so does this means that every function I ever write has to be rewritten to accommodate different types even the logic is the same?
+
+7. Rules of interface
+    interface is about helping you to reuse the code
+    syntax:
+        type bot interface {
+            getGreeting(string, int) (string, error)
+            // name     argument type   return type
+        }
+
+    Concrete type: you can create value direcly -> map, int, struct, string, englishbot  
+    interface type: you can't create value -> bot
+
+8. Reader interface: to resolve the question I had above
+    use reader interface to take some source of data and kind of import that data into our application with a common point of contact that many other pieces of code can easily work with
+    type Reader interface {
+        Read(p []byte) (n int, err error)
+    }
+    Read function: 
+        To take radically different sources of input and translate them into some common medium that all the other functions can easily work with.
+        Cannot resize, so when we use make() put a big number in.
+
+9. Code: func (c *Client) Get(url string) (resp *Response, err error)
+    Notice:Get will return a pointer of response and a error type
+
+    Code: type Response struct {
+            Status     string // e.g. "200 OK"
+            StatusCode int    // e.g. 200
+            Proto      string // e.g. "HTTP/1.0"
+            ProtoMajor int    // e.g. 1
+            ProtoMinor int    // e.g. 0
+            Header Header
+            Body io.ReadCloser
+            ...
+            }
+    Notice: Response is a struct, and it has a body type in it
+
+    |  Response struct     |
+     ----------------------
+    | status  -> string    |
+    | status code -> int   |
+    | body -> io.ReadCloser|   -->      |  Response struct     |
+                                         ----------------------
+                                        | Reader               |  ->  |  io.Reader                   |
+                                        | Closer               |       ------------------------------
+                                                                      | Read (p []byte) (n int, err) |
+
+
+                                                                   -> |  io.Closer                  |
+                                                                       ------------------------------
+                                                                      | Close() (error)             |
+                                        
+10. Writer Interface:
+    Writer interface describes something that can tale info and send it outside of our program
+    code:
+        type Writer interface {
+	        Write(p []byte) (n int, err error)
+        }
+     Write function receives a bite slice and then returns an integer and error.
+     \
+
+11. io.Copy(dst Writer, src Reader) (written int64, err error){
+        return copyBuffer(dst, scr, nil)
+    }
+
+    // copyBuffer is the actual implementation of Copy and CopyBuffer.
+    // if buf is nil, one is allocated.
+    func copyBuffer(dst Writer, src Reader, buf []byte) (written int64, err error) {
+        // If the reader has a WriteTo method, use it to do the copy.
+        // Avoids an allocation and a copy.
+        if wt, ok := src.(WriterTo); ok {
+            return wt.WriteTo(dst)
+        }
+        // Similarly, if the writer has a ReadFrom method, use it to do the copy.
+        if rt, ok := dst.(ReaderFrom); ok {
+            return rt.ReadFrom(src)
+        }
+        if buf == nil {
+            size := 32 * 1024
+            if l, ok := src.(*LimitedReader); ok && int64(size) > l.N {
+                if l.N < 1 {
+                    size = 1
+                } else {
+                    size = int(l.N)
+                }
+            }
+            buf = make([]byte, size)
+        }
+        for {
+            nr, er := src.Read(buf)
+            if nr > 0 {
+                nw, ew := dst.Write(buf[0:nr])
+                if nw < 0 || nr < nw {
+                    nw = 0
+                    if ew == nil {
+                        ew = errInvalidWrite
+                    }
+                }
+                written += int64(nw)
+                if ew != nil {
+                    err = ew
+                    break
+                }
+                if nr != nw {
+                    err = ErrShortWrite
+                    break
+                }
+            }
+            if er != nil {
+                if er != EOF {
+                    err = er
+                }
+                break
+            }
+        }
+        return written, err
+    }
+
+12. Code: io.Copy(os.Stdout, resp.Body)
+          io.Copy(something that implements the writer interface,  -> os.Stdout -> value of type of File -> File has a function called "write" 
+                    something that implements the reader interface)
+
+
+
+                
